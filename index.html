@@ -181,6 +181,29 @@
 
     input[type="file"] {
       max-width: 100%;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      color: var(--muted);
+      font: inherit;
+    }
+
+    input[type="file"]::file-selector-button {
+      border: 1px solid rgba(79, 70, 229, 0.18);
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.06));
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-right: 12px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.14), rgba(124, 58, 237, 0.1));
     }
 
     textarea, input[type="text"] {
@@ -700,8 +723,28 @@ Product strategy, roadmap planning, experimentation, analytics, user research, s
       el.className = `chip ${value.variant}`;
     }
 
+    function createEmptyAnalysis(message) {
+      return {
+        source: 'local',
+        role: targetRole.value,
+        keywords: [],
+        jobDescription: jobDescription.value.trim(),
+        wordCount: 0,
+        atsScore: 0,
+        matched: [],
+        missing: [],
+        matchedPercent: 0,
+        grammarScore: 0,
+        readiness: 0,
+        grammarFlags: [message],
+        suggestions: ['Paste a resume or load the sample to see instant feedback.'],
+        summary: 'No resume text loaded yet.'
+      };
+    }
+
     function renderAnalysis(result) {
       latestReport = result;
+      const emptyResume = !result.wordCount;
       analysisStatus.textContent = result.source === 'ai'
         ? 'AI analysis completed.'
         : result.source === 'fallback'
@@ -713,43 +756,49 @@ Product strategy, roadmap planning, experimentation, analytics, user research, s
           ? 'Heuristic analysis is active. Add OPENAI_API_KEY to turn on AI feedback.'
           : 'Local preview ready. Click Analyze resume to request AI feedback when enabled.';
 
-      document.getElementById('atsScore').textContent = `${result.atsScore}%`;
-      document.getElementById('keywordScore').textContent = `${result.matchedPercent}%`;
-      document.getElementById('grammarScore').textContent = `${result.grammarScore}%`;
-      document.getElementById('readinessScore').textContent = `${result.readiness}%`;
+      document.getElementById('atsScore').textContent = emptyResume ? '—' : `${result.atsScore}%`;
+      document.getElementById('keywordScore').textContent = emptyResume ? '—' : `${result.matchedPercent}%`;
+      document.getElementById('grammarScore').textContent = emptyResume ? '—' : `${result.grammarScore}%`;
+      document.getElementById('readinessScore').textContent = emptyResume ? '—' : `${result.readiness}%`;
 
       renderBadge(document.getElementById('atsBadge'), {
-        text: result.atsScore >= 80 ? 'Strong ATS fit' : result.atsScore >= 60 ? 'Moderate ATS fit' : 'Needs work',
-        variant: result.atsScore >= 80 ? 'good' : result.atsScore >= 60 ? 'warn' : 'bad'
+        text: emptyResume ? 'Waiting for resume' : result.atsScore >= 80 ? 'Strong ATS fit' : result.atsScore >= 60 ? 'Moderate ATS fit' : 'Needs work',
+        variant: emptyResume ? 'warn' : result.atsScore >= 80 ? 'good' : result.atsScore >= 60 ? 'warn' : 'bad'
       });
       renderBadge(document.getElementById('keywordBadge'), {
-        text: `${result.matched.length} matched / ${result.missing.length} missing`,
-        variant: result.matched.length >= result.missing.length ? 'good' : 'warn'
+        text: emptyResume ? 'No resume yet' : `${result.matched.length} matched / ${result.missing.length} missing`,
+        variant: emptyResume ? 'warn' : result.matched.length >= result.missing.length ? 'good' : 'warn'
       });
       renderBadge(document.getElementById('grammarBadge'), {
-        text: result.grammarFlags.length ? `${result.grammarFlags.length} flags found` : 'No major flags',
-        variant: result.grammarFlags.length ? 'warn' : 'good'
+        text: emptyResume ? 'Ready to review' : result.grammarFlags.length ? `${result.grammarFlags.length} flags found` : 'No major flags',
+        variant: emptyResume ? 'warn' : result.grammarFlags.length ? 'warn' : 'good'
       });
       renderBadge(document.getElementById('readinessBadge'), {
-        text: result.readiness >= 80 ? 'Ready to apply' : result.readiness >= 60 ? 'Nearly ready' : 'Needs revision',
-        variant: result.readiness >= 80 ? 'good' : result.readiness >= 60 ? 'warn' : 'bad'
+        text: emptyResume ? 'Awaiting input' : result.readiness >= 80 ? 'Ready to apply' : result.readiness >= 60 ? 'Nearly ready' : 'Needs revision',
+        variant: emptyResume ? 'warn' : result.readiness >= 80 ? 'good' : result.readiness >= 60 ? 'warn' : 'bad'
       });
 
       const missingKeywords = document.getElementById('missingKeywords');
       missingKeywords.className = result.missing.length ? '' : 'empty';
-      missingKeywords.innerHTML = result.missing.length
+      missingKeywords.innerHTML = emptyResume
+        ? '<div class="empty">Add a resume to see tailored keyword gaps.</div>'
+        : result.missing.length
         ? `<ul>${result.missing.map(item => `<li>${item}</li>`).join('')}</ul>`
         : '<div class="empty">Great match: no obvious keyword gaps detected.</div>';
 
       const suggestions = document.getElementById('suggestions');
       suggestions.className = result.suggestions.length ? '' : 'empty';
-      suggestions.innerHTML = result.suggestions.length
+      suggestions.innerHTML = emptyResume
+        ? '<div class="empty">Paste a resume and job description to get tailored suggestions.</div>'
+        : result.suggestions.length
         ? `<ul>${result.suggestions.map(item => `<li>${item}</li>`).join('')}</ul>`
         : '<div class="empty">No improvement suggestions right now.</div>';
 
       const grammarNotes = document.getElementById('grammarNotes');
       grammarNotes.className = result.grammarFlags.length ? '' : 'empty';
-      grammarNotes.innerHTML = result.grammarFlags.length
+      grammarNotes.innerHTML = emptyResume
+        ? '<div class="empty">Formatting and grammar notes will appear once a resume is loaded.</div>'
+        : result.grammarFlags.length
         ? `<ul>${result.grammarFlags.map(item => `<li>${item}</li>`).join('')}</ul>`
         : '<div class="empty">Nice and tidy: no obvious grammar or formatting issues were found.</div>';
 
@@ -758,7 +807,7 @@ Product strategy, roadmap planning, experimentation, analytics, user research, s
       summary.innerHTML = `
         <div class="empty">
           <strong>Resume summary</strong><br />
-          ${result.summary}
+          ${emptyResume ? 'Upload a resume to begin.' : result.summary}
         </div>
       `;
     }
@@ -868,17 +917,8 @@ Product strategy, roadmap planning, experimentation, analytics, user research, s
     analyzeBtn.addEventListener('click', () => {
       const text = resumeText.value.trim();
       if (!text) {
-        renderAnalysis({
-          atsScore: 0,
-          matched: [],
-          missing: [],
-          matchedPercent: 0,
-          grammarScore: 0,
-          readiness: 0,
-          grammarFlags: ['Please upload or paste resume text first.'],
-          suggestions: ['Paste a resume or load the sample to see instant feedback.'],
-          summary: 'No resume text loaded yet.'
-        });
+        analysisStatus.textContent = 'Please add a resume first.';
+        renderAnalysis(createEmptyAnalysis('Add a resume or load the sample to see instant feedback.'));
         return;
       }
 
