@@ -9,6 +9,6 @@
   },
   "scripts": {
     "start": "node server.js",
-    "validate": "node -e \"const fs=require('fs'); const html=fs.readFileSync('index.html','utf8'); const server=fs.readFileSync('server.js','utf8'); const start=html.indexOf('<script>'); const end=html.lastIndexOf('</script>'); if(start<0||end<0||end<=start) throw new Error('script not found'); const client=html.slice(start+8,end); new Function(client); new Function(server); console.log('Validation passed');\""
+    "validate": "node -e \"const fs=require('fs'); const html=fs.readFileSync('index.html','utf8'); const server=fs.readFileSync('server.js','utf8'); const api=fs.readFileSync('api/analyze-resume.js','utf8'); const start=html.indexOf('<script>'); const end=html.lastIndexOf('</script>'); if(start<0||end<0||end<=start) throw new Error('script not found'); const client=html.slice(start+8,end); new Function(client); new Function(server); new Function(api); console.log('Validation passed');\""
   }
 }

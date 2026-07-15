@@ -20,9 +20,11 @@ A lightweight browser-based resume analyzer that scores ATS fit, flags missing k
 
 ## Deploy
 
-This app is ready for Node hosting on services like Render.
+This app is ready for free deployment on Vercel Hobby.
 
-1. Push the repo to GitHub.
-2. Create a new web service from the repo.
-3. Set `OPENAI_API_KEY` in the service environment.
-4. Use the included `render.yaml`, or run `npm install` as build and `npm start` as the start command.
+1. Import the GitHub repo into Vercel.
+2. Leave the framework as the default auto-detect option.
+3. Add `OPENAI_API_KEY` in the project environment variables.
+4. Deploy — the free Hobby plan is listed at `$0/mo` and includes serverless functions.
+
+GitHub Pages is still fine for a static-only version, but this app needs an API route for AI analysis, so Vercel is the better free fit.
