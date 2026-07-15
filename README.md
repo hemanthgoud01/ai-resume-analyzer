@@ -28,3 +28,9 @@ This app is ready for free deployment on Vercel Hobby.
 4. Deploy — the free Hobby plan is listed at `$0/mo` and includes serverless functions.
 
 GitHub Pages is still fine for a static-only version, but this app needs an API route for AI analysis, so Vercel is the better free fit.
+
+## Launch Kit
+
+- Public demo: `https://ai-resume-analyzer-bice-phi.vercel.app/`
+- Suggested caption: “Built a simple AI Resume Analyzer that scores ATS fit, finds keyword gaps, and gives instant improvement suggestions. Try the live demo here: https://ai-resume-analyzer-bice-phi.vercel.app/”
+- Best demo flow: paste a resume, add a job description, click **Analyze resume**, and show the score changes live.

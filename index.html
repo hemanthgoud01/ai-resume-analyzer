@@ -93,6 +93,11 @@
       gap: 14px;
     }
 
+    .hero-stack {
+      display: grid;
+      gap: 14px;
+    }
+
     .stat {
       padding: 16px;
       border-radius: 18px;
@@ -118,6 +123,36 @@
       flex-direction: column;
       gap: 16px;
       justify-content: space-between;
+    }
+
+    .share-panel {
+      display: grid;
+      gap: 12px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(124, 58, 237, 0.05));
+      border: 1px solid rgba(79, 70, 229, 0.14);
+    }
+
+    .share-panel h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .share-panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .share-link {
+      display: grid;
+      gap: 8px;
+    }
+
+    .share-link input {
+      cursor: copy;
     }
 
     .upload-zone {
@@ -181,6 +216,10 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+    }
+
+    .actions .btn {
+      flex: 1 1 160px;
     }
 
     .job-description {
@@ -331,12 +370,12 @@
 <body>
   <main class="shell">
     <section class="hero">
-      <div class="panel hero-copy">
+      <div class="panel hero-copy hero-stack">
         <div class="eyebrow">AI Resume Analyzer</div>
         <h1>Instant ATS feedback for every resume upload.</h1>
         <p class="lead">
           Drop in a resume, compare it against a target role, and get a fast breakdown of ATS score, missing keywords,
-          grammar issues, and high-impact improvements. This prototype runs fully in the browser.
+          grammar issues, and high-impact improvements. This prototype runs fully in the browser and is ready to share.
         </p>
         <div class="stats">
           <div class="stat">
@@ -350,6 +389,20 @@
           <div class="stat">
             <strong>Resume polish</strong>
             <span>Catches readability, grammar, and formatting issues early.</span>
+          </div>
+        </div>
+        <div class="share-panel">
+          <h3>Share this demo</h3>
+          <p>Send the live link to teammates, recruiters, or friends. The app works best when you paste a resume and job description together.</p>
+          <div class="share-link">
+            <label>
+              Public URL
+              <input id="shareUrl" type="text" readonly value="https://ai-resume-analyzer-bice-phi.vercel.app/" />
+            </label>
+            <div class="actions">
+              <button class="btn secondary" id="copyLink" type="button">Copy link</button>
+              <button class="btn secondary" id="loadSampleHero" type="button">Load sample</button>
+            </div>
           </div>
         </div>
       </div>
@@ -454,7 +507,10 @@
     const keywordInput = document.getElementById('keywordInput');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const loadSample = document.getElementById('loadSample');
+    const loadSampleHero = document.getElementById('loadSampleHero');
     const downloadReport = document.getElementById('downloadReport');
+    const copyLink = document.getElementById('copyLink');
+    const shareUrl = document.getElementById('shareUrl');
     const dropzone = document.getElementById('dropzone');
     const analysisStatus = document.getElementById('analysisStatus');
     const analysisNotice = document.getElementById('analysisNotice');
@@ -791,6 +847,22 @@ Product strategy, roadmap planning, experimentation, analytics, user research, s
       resumeText.value = sampleResume;
       const inputs = currentInputs();
       renderAnalysis(analyzeResume(sampleResume, inputs.role, inputs.keywords, inputs.jobText));
+    });
+
+    loadSampleHero.addEventListener('click', () => {
+      loadSample.click();
+    });
+
+    copyLink.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl.value);
+        copyLink.textContent = 'Copied!';
+        setTimeout(() => {
+          copyLink.textContent = 'Copy link';
+        }, 1500);
+      } catch {
+        shareUrl.select();
+      }
     });
 
     analyzeBtn.addEventListener('click', () => {
