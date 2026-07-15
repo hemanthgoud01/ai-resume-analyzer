@@ -12,6 +12,7 @@ A lightweight browser-based resume analyzer that scores ATS fit, flags missing k
 
 - Upload plain-text resumes with the file picker or drag and drop.
 - You can also paste resume text directly into the editor.
+- Paste a job description to tailor keyword matching to a real posting.
 - PDF and DOCX uploads are parsed in-browser when the helper libraries load successfully.
 - You can still paste extracted text manually if a file parser is unavailable.
 - If the API key is missing, the app falls back to local heuristic analysis.

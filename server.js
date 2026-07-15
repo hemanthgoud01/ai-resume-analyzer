@@ -36,12 +36,42 @@ function countMatches(text, terms) {
   return terms.filter(term => lower.includes(term.toLowerCase()));
 }
 
-function analyzeHeuristically(resumeText, role, keywordString) {
+function extractKeywordsFromText(text) {
+  const stopWords = new Set([
+    'the', 'and', 'for', 'with', 'that', 'this', 'you', 'your', 'are', 'our', 'from', 'will', 'have', 'has',
+    'role', 'team', 'teams', 'work', 'working', 'years', 'year', 'experience', 'skills', 'ability',
+    'responsible', 'responsibilities', 'requirements', 'preferred', 'bonus', 'must', 'should', 'including',
+    'looking', 'about', 'also', 'they', 'them', 'their', 'into', 'over', 'under', 'using', 'within', 'across',
+    'candidate', 'candidates'
+  ]);
+
+  const words = tokenize(text)
+    .map(word => word.replace(/^[^a-z0-9]+|[^a-z0-9+.#/-]+$/gi, ''))
+    .filter(word => word.length > 2 && !stopWords.has(word));
+
+  const pairCounts = new Map();
+  for (let index = 0; index < words.length - 1; index += 1) {
+    const pair = `${words[index]} ${words[index + 1]}`;
+    pairCounts.set(pair, (pairCounts.get(pair) || 0) + 1);
+  }
+
+  return [...new Set([
+    ...[...pairCounts.entries()].filter(([, count]) => count > 1).map(([phrase]) => phrase),
+    ...words.slice(0, 20)
+  ])].slice(0, 14);
+}
+
+function analyzeHeuristically(resumeText, role, keywordString, jobDescription) {
   const keywords = String(keywordString || '')
     .split(',')
     .map(item => item.trim())
     .filter(Boolean);
-  const fallbackKeywords = keywords.length ? keywords : ['impact', 'leadership', 'analysis', 'communication'];
+  const jobKeywords = extractKeywordsFromText(jobDescription || '');
+  const fallbackKeywords = [...new Set([
+    ...jobKeywords,
+    ...keywords,
+    ...(keywords.length ? [] : ['impact', 'leadership', 'analysis', 'communication'])
+  ])];
   const words = tokenize(resumeText);
   const lower = normalize(resumeText).toLowerCase();
   const matched = countMatches(lower, fallbackKeywords);
@@ -81,6 +111,7 @@ function analyzeHeuristically(resumeText, role, keywordString) {
   return {
     source: 'fallback',
     role,
+    jobDescription: normalize(jobDescription || ''),
     keywords: fallbackKeywords,
     wordCount,
     atsScore,
@@ -109,6 +140,7 @@ function normalizeAiResponse(raw, fallback) {
   return {
     source: 'ai',
     role: fallback.role,
+    jobDescription: fallback.jobDescription,
     keywords: fallback.keywords,
     wordCount: fallback.wordCount,
     atsScore,
@@ -130,7 +162,7 @@ async function readBody(req) {
   return text ? JSON.parse(text) : {};
 }
 
-async function extractOpenAiJson(resumeText, role, keywords, fallback) {
+async function extractOpenAiJson(resumeText, role, keywords, jobDescription, fallback) {
   const systemPrompt = [
     'You are an expert resume reviewer and ATS analyst.',
     'Return ONLY valid JSON, no markdown, no code fences.',
@@ -144,6 +176,7 @@ async function extractOpenAiJson(resumeText, role, keywords, fallback) {
   const userPrompt = JSON.stringify({
     targetRole: role,
     priorityKeywords: keywords,
+    jobDescription,
     resumeText
   });
 
@@ -182,6 +215,7 @@ async function handleAnalyzeResume(req, res) {
     const resumeText = normalize(body.resumeText);
     const role = String(body.targetRole || 'Target role').trim();
     const keywords = String(body.keywords || '');
+    const jobDescription = normalize(body.jobDescription || '');
 
     if (!resumeText) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -189,7 +223,7 @@ async function handleAnalyzeResume(req, res) {
       return;
     }
 
-    const fallback = analyzeHeuristically(resumeText, role, keywords);
+    const fallback = analyzeHeuristically(resumeText, role, keywords, jobDescription);
 
     if (!openAiKey) {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -198,7 +232,7 @@ async function handleAnalyzeResume(req, res) {
     }
 
     try {
-      const aiResult = await extractOpenAiJson(resumeText, role, keywords, fallback);
+      const aiResult = await extractOpenAiJson(resumeText, role, keywords, jobDescription, fallback);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(aiResult));
     } catch (error) {
