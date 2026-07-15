@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Resume Analyzer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #132238;
+      --muted: #66758f;
+      --line: #dfe6f0;
+      --brand: #4f46e5;
+      --brand-2: #7c3aed;
+      --good: #16a34a;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --shadow: 0 18px 50px rgba(19, 34, 56, 0.08);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(79, 70, 229, 0.15), transparent 35%),
+        radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 30%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(223, 230, 240, 0.9);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero-copy {
+      padding: 32px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(79, 70, 229, 0.08);
+      color: var(--brand);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(2.1rem, 4vw, 4rem);
+      line-height: 1.02;
+      margin: 0 0 14px;
+      letter-spacing: -0.05em;
+    }
+
+    .lead {
+      margin: 0 0 22px;
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 64ch;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    .upload-card {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      justify-content: space-between;
+    }
+
+    .upload-zone {
+      border: 1.5px dashed #c7d2e5;
+      border-radius: 20px;
+      padding: 26px;
+      background: linear-gradient(180deg, rgba(79, 70, 229, 0.03), rgba(255, 255, 255, 0.9));
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .upload-zone.dragover {
+      border-color: var(--brand);
+      background: rgba(79, 70, 229, 0.08);
+    }
+
+    .file-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="file"] {
+      max-width: 100%;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font: inherit;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: rgba(79, 70, 229, 0.7);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn.primary {
+      color: white;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 14px 28px rgba(79, 70, 229, 0.22);
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .results {
+      margin-top: 22px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .score-card {
+      padding: 20px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .score-card .label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .score {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-top: 12px;
+      width: fit-content;
+    }
+
+    .chip.good { background: rgba(22, 163, 74, 0.12); color: var(--good); }
+    .chip.warn { background: rgba(217, 119, 6, 0.12); color: var(--warn); }
+    .chip.bad { background: rgba(220, 38, 38, 0.12); color: var(--bad); }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .detail-panel {
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .detail-panel h2 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text);
+    }
+
+    li + li { margin-top: 10px; }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 18px;
+      border-radius: 18px;
+      background: #f8fafc;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .detail-grid, .score-grid, .controls, .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="panel hero-copy">
+        <div class="eyebrow">AI Resume Analyzer</div>
+        <h1>Instant ATS feedback for every resume upload.</h1>
+        <p class="lead">
+          Drop in a resume, compare it against a target role, and get a fast breakdown of ATS score, missing keywords,
+          grammar issues, and high-impact improvements. This prototype runs fully in the browser.
+        </p>
+        <div class="stats">
+          <div class="stat">
+            <strong>ATS score</strong>
+            <span>Weighted from keywords, structure, and contact completeness.</span>
+          </div>
+          <div class="stat">
+            <strong>Keyword gaps</strong>
+            <span>Highlights missing role terms with practical suggestions.</span>
+          </div>
+          <div class="stat">
+            <strong>Resume polish</strong>
+            <span>Catches readability, grammar, and formatting issues early.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel upload-card">
+        <div class="upload-zone" id="dropzone">
+          <div>
+            <strong>Upload a resume</strong>
+            <p class="muted">We support `.txt`, `.md`, and pasted resume text. Drag and drop or choose a file.</p>
+          </div>
+          <div class="file-row">
+            <input id="resumeFile" type="file" accept=".txt,.md,.json,.csv,.pdf,.docx,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            <button class="btn secondary" id="loadSample" type="button">Load sample</button>
+          </div>
+          <label>
+            Resume text
+            <textarea id="resumeText" placeholder="Paste the resume text here, or upload a plain-text file..."></textarea>
+          </label>
+        </div>
+
+        <div class="controls">
+          <label>
+            Target role
+            <input id="targetRole" type="text" value="Product Manager" />
+          </label>
+          <label>
+            Priority keywords
+            <input id="keywordInput" type="text" value="product strategy, roadmap, stakeholder management, analytics, experimentation, cross-functional, launch" />
+          </label>
+          <button class="btn primary" id="analyzeBtn" type="button">Analyze resume</button>
+          <button class="btn secondary" id="downloadReport" type="button">Download report</button>
+        </div>
+        <div class="empty" id="analysisStatus">Ready for local preview or AI analysis.</div>
+      </div>
+    </section>
+
+    <section class="results">
+      <div class="empty" id="analysisNotice">Analysis results will appear here.</div>
+      <div class="score-grid">
+        <div class="score-card">
+          <div class="label">ATS Score</div>
+          <div class="score" id="atsScore">--</div>
+          <div class="chip warn" id="atsBadge">Waiting for upload</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Keyword Match</div>
+          <div class="score" id="keywordScore">--</div>
+          <div class="chip" id="keywordBadge">Matched keywords</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Grammar Flags</div>
+          <div class="score" id="grammarScore">--</div>
+          <div class="chip" id="grammarBadge">Potential issues</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Readiness</div>
+          <div class="score" id="readinessScore">--</div>
+          <div class="chip" id="readinessBadge">Overall impression</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <article class="detail-panel">
+          <h2>Missing keywords</h2>
+          <div id="missingKeywords" class="empty">Upload a resume to see keyword gaps.</div>
+        </article>
+        <article class="detail-panel">
+          <h2>Improvement suggestions</h2>
+          <div id="suggestions" class="empty">We’ll suggest ways to improve impact and ATS alignment.</div>
+        </article>
+        <article class="detail-panel">
+          <h2>Grammar and formatting notes</h2>
+          <div id="grammarNotes" class="empty">Grammar flags and formatting notes will show here.</div>
+        </article>
+        <article class="detail-panel">
+          <h2>Resume summary</h2>
+          <div id="summary" class="empty">A short summary of the uploaded resume will appear here.</div>
+        </article>
+      </div>
+
+      <p class="footer-note">
+        Tip: PDF and DOCX uploads are parsed automatically when the browser can load the helper libraries.
+        The scoring logic is intentionally transparent so you can tune it for your team or product later.
+      </p>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/mammoth@1.7.1/mammoth.browser.min.js"></script>
+  <script>
+    const resumeFile = document.getElementById('resumeFile');
+    const resumeText = document.getElementById('resumeText');
+    const targetRole = document.getElementById('targetRole');
+    const keywordInput = document.getElementById('keywordInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loadSample = document.getElementById('loadSample');
+    const downloadReport = document.getElementById('downloadReport');
+    const dropzone = document.getElementById('dropzone');
+    const analysisStatus = document.getElementById('analysisStatus');
+    const analysisNotice = document.getElementById('analysisNotice');
+    let latestReport = null;
+
+    const sampleResume = `Ariana Patel
+Product manager with 6+ years of experience leading cross-functional teams, defining strategy, and launching customer-facing products.
+
+Experience
+Senior Product Manager, Northstar Labs
+- Led roadmap planning for analytics and experimentation platform used by 120+ teams.
+- Partnered with engineering, design, and sales to launch a self-serve onboarding flow.
+- Improved activation by 18% through A/B testing and customer research.
+
+Product Manager, Nova Commerce
+- Owned pricing strategy and launch planning for a new subscription tier.
+- Drove stakeholder management across engineering, finance, and marketing.
+- Created KPI dashboards to track retention, revenue, and conversion.
+
+Skills
+Product strategy, roadmap planning, experimentation, analytics, user research, stakeholder management, launch planning, cross-functional leadership`;
+
+    const roleKeywordLibrary = {
+      'product manager': ['product strategy', 'roadmap', 'stakeholder management', 'analytics', 'experimentation', 'cross-functional', 'launch', 'user research', 'kpi', 'retention'],
+      'software engineer': ['javascript', 'typescript', 'api', 'testing', 'system design', 'react', 'node', 'backend', 'frontend', 'ci/cd'],
+      'data analyst': ['sql', 'python', 'dashboard', 'visualization', 'analysis', 'tableau', 'power bi', 'statistics', 'modeling', 'reporting'],
+      'marketing manager': ['campaign', 'brand', 'seo', 'content', 'growth', 'analytics', 'conversion', 'roi', 'lead generation', 'positioning']
+    };
+
+    function normalize(text) {
+      return text.replace(/\r\n/g, '\n').trim();
+    }
+
+    function tokenize(text) {
+      return text.toLowerCase().match(/[a-z0-9+#.-]+/g) || [];
+    }
+
+    function sentences(text) {
+      return normalize(text)
+        .split(/\n+/)
+        .reduce((all, chunk) => {
+          const pieces = chunk.match(/[^.!?]+[.!?]?/g) || [chunk];
+          pieces.forEach(piece => all.push(piece.trim()));
+          return all;
+        }, [])
+        .filter(Boolean);
+    }
+
+    function countMatches(text, terms) {
+      const lower = text.toLowerCase();
+      return terms.filter(term => lower.includes(term.toLowerCase()));
+    }
+
+    function assessGrammar(text) {
+      const notes = [];
+      const lower = text.toLowerCase();
+      const issues = [];
+
+      const repeatedSpaces = (text.match(/\s{2,}/g) || []).length;
+      if (repeatedSpaces) issues.push(`${repeatedSpaces} instance${repeatedSpaces > 1 ? 's' : ''} of repeated spacing.`);
+
+      const longSentences = sentences(text).filter(sentence => sentence.split(/\s+/).length > 30);
+      if (longSentences.length) issues.push(`${longSentences.length} long sentence${longSentences.length > 1 ? 's' : ''} may be hard for ATS and recruiters to scan.`);
+
+      const weakVerbs = countMatches(lower, ['worked on', 'helped with', 'responsible for', 'assisted with', 'tasked with']);
+      if (weakVerbs.length) issues.push('Replace vague phrasing like “responsible for” with stronger action verbs.');
+
+      const passiveVoiceHints = countMatches(lower, ['was led', 'were led', 'was responsible', 'were responsible', 'was managed', 'were managed']);
+      if (passiveVoiceHints.length) issues.push('Some bullets read passive; active voice usually performs better.');
+
+      const bulletCount = (text.match(/^\s*[-*•]/gm) || []).length;
+      if (bulletCount < 3) issues.push('Consider adding more quantified bullets to show impact.');
+
+      if (/[^a-z0-9\s.,;:()&/+-]/i.test(text)) notes.push('Unusual characters detected; check for formatting noise from conversion.');
+
+      return [...issues, ...notes];
+    }
+
+    function sectionSignals(text) {
+      const sections = ['experience', 'education', 'skills', 'projects', 'summary', 'certifications'];
+      const found = sections.filter(section => new RegExp(`^\\s*${section}\\b`, 'mi').test(text));
+      return found;
+    }
+
+    function extractKeywords(role, customKeywords) {
+      const roleKey = role.trim().toLowerCase();
+      const preset = Object.entries(roleKeywordLibrary).find(([key]) => roleKey.includes(key));
+      const keywords = customKeywords
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+      if (preset) {
+        return [...new Set([...preset[1], ...keywords])];
+      }
+      return [...new Set(keywords.length ? keywords : ['impact', 'leadership', 'analysis', 'communication', 'execution'])];
+    }
+
+    function analyzeResume(text, role, keywordString) {
+      const normalized = normalize(text);
+      const words = tokenize(normalized);
+      const keywords = extractKeywords(role, keywordString);
+      const matched = countMatches(normalized, keywords);
+      const missing = keywords.filter(keyword => !matched.includes(keyword));
+
+      const wordCount = words.length;
+      const sectionCount = sectionSignals(normalized).length;
+      const contactScore = [
+        /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/.test(normalized),
+        /\b(\+?\d[\d\s().-]{7,}\d)\b/.test(normalized),
+        /\b(linkedin\.com|github\.com|portfolio|website)\b/i.test(normalized)
+      ].filter(Boolean).length;
+
+      const grammarFlags = assessGrammar(normalized);
+      const scoreParts = {
+        keyword: Math.min(45, Math.round((matched.length / Math.max(keywords.length, 1)) * 45)),
+        structure: Math.min(20, sectionCount * 4 + (wordCount >= 250 ? 6 : wordCount >= 150 ? 4 : 0)),
+        contact: contactScore * 6,
+        length: wordCount >= 180 && wordCount <= 900 ? 15 : wordCount >= 100 ? 8 : 2,
+        grammar: Math.max(0, 20 - grammarFlags.length * 3)
+      };
+
+      let atsScore = Object.values(scoreParts).reduce((sum, value) => sum + value, 0);
+      atsScore = Math.max(0, Math.min(100, atsScore));
+
+      const matchedPercent = keywords.length ? Math.round((matched.length / keywords.length) * 100) : 0;
+      const grammarScore = Math.max(0, 100 - grammarFlags.length * 12);
+      const readiness = Math.round((atsScore + grammarScore) / 2);
+
+      const suggestions = [];
+      if (matched.length < keywords.length / 2) suggestions.push('Add more role-specific keywords naturally inside impact bullets and the skills section.');
+      if (sectionCount < 3) suggestions.push('Make sure the resume has clear sections like Experience, Skills, and Education.');
+      if (contactScore < 2) suggestions.push('Include a complete contact block with email, phone, and portfolio or LinkedIn.');
+      if (wordCount < 150) suggestions.push('Expand the resume with quantified achievements and context around scope.');
+      if (wordCount > 900) suggestions.push('Trim repetition and focus on the most relevant accomplishments for the target role.');
+      if (grammarFlags.length === 0) suggestions.push('Nice work: the draft is readable. Add one or two quantified results to strengthen impact.');
+
+      return {
+        source: 'local',
+        role,
+        keywords,
+        wordCount,
+        atsScore,
+        matched,
+        missing,
+        matchedPercent,
+        grammarScore,
+        readiness,
+        grammarFlags,
+        suggestions,
+        summary: `${wordCount} words • ${sectionCount} detected sections • ${contactScore}/3 contact signals found`
+      };
+    }
+
+    function renderBadge(el, value) {
+      el.textContent = value.text;
+      el.className = `chip ${value.variant}`;
+    }
+
+    function renderAnalysis(result) {
+      latestReport = result;
+      analysisStatus.textContent = result.source === 'ai'
+        ? 'AI analysis completed.'
+        : result.source === 'fallback'
+          ? 'OpenAI key not configured; showing local analysis.'
+          : 'Showing local preview.';
+      analysisNotice.textContent = result.source === 'ai'
+        ? 'AI-generated review based on the uploaded resume and target role.'
+        : result.source === 'fallback'
+          ? 'Heuristic analysis is active. Add OPENAI_API_KEY to turn on AI feedback.'
+          : 'Local preview ready. Click Analyze resume to request AI feedback when enabled.';
+
+      document.getElementById('atsScore').textContent = `${result.atsScore}%`;
+      document.getElementById('keywordScore').textContent = `${result.matchedPercent}%`;
+      document.getElementById('grammarScore').textContent = `${result.grammarScore}%`;
+      document.getElementById('readinessScore').textContent = `${result.readiness}%`;
+
+      renderBadge(document.getElementById('atsBadge'), {
+        text: result.atsScore >= 80 ? 'Strong ATS fit' : result.atsScore >= 60 ? 'Moderate ATS fit' : 'Needs work',
+        variant: result.atsScore >= 80 ? 'good' : result.atsScore >= 60 ? 'warn' : 'bad'
+      });
+      renderBadge(document.getElementById('keywordBadge'), {
+        text: `${result.matched.length} matched / ${result.missing.length} missing`,
+        variant: result.matched.length >= result.missing.length ? 'good' : 'warn'
+      });
+      renderBadge(document.getElementById('grammarBadge'), {
+        text: result.grammarFlags.length ? `${result.grammarFlags.length} flags found` : 'No major flags',
+        variant: result.grammarFlags.length ? 'warn' : 'good'
+      });
+      renderBadge(document.getElementById('readinessBadge'), {
+        text: result.readiness >= 80 ? 'Ready to apply' : result.readiness >= 60 ? 'Nearly ready' : 'Needs revision',
+        variant: result.readiness >= 80 ? 'good' : result.readiness >= 60 ? 'warn' : 'bad'
+      });
+
+      const missingKeywords = document.getElementById('missingKeywords');
+      missingKeywords.className = result.missing.length ? '' : 'empty';
+      missingKeywords.innerHTML = result.missing.length
+        ? `<ul>${result.missing.map(item => `<li>${item}</li>`).join('')}</ul>`
+        : '<div class="empty">Great match: no obvious keyword gaps detected.</div>';
+
+      const suggestions = document.getElementById('suggestions');
+      suggestions.className = result.suggestions.length ? '' : 'empty';
+      suggestions.innerHTML = result.suggestions.length
+        ? `<ul>${result.suggestions.map(item => `<li>${item}</li>`).join('')}</ul>`
+        : '<div class="empty">No improvement suggestions right now.</div>';
+
+      const grammarNotes = document.getElementById('grammarNotes');
+      grammarNotes.className = result.grammarFlags.length ? '' : 'empty';
+      grammarNotes.innerHTML = result.grammarFlags.length
+        ? `<ul>${result.grammarFlags.map(item => `<li>${item}</li>`).join('')}</ul>`
+        : '<div class="empty">Nice and tidy: no obvious grammar or formatting issues were found.</div>';
+
+      const summary = document.getElementById('summary');
+      summary.className = '';
+      summary.innerHTML = `
+        <div class="empty">
+          <strong>Resume summary</strong><br />
+          ${result.summary}
+        </div>
+      `;
+    }
+
+    async function fileToText(file) {
+      const name = (file.name || '').toLowerCase();
+      const type = (file.type || '').toLowerCase();
+
+      if (name.endsWith('.pdf') || type === 'application/pdf') {
+        if (!window.pdfjsLib) throw new Error('PDF support is unavailable right now. Reload the page and try again.');
+        const arrayBuffer = await file.arrayBuffer();
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let extracted = '';
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          const page = await pdf.getPage(pageNumber);
+          const content = await page.getTextContent();
+          extracted += content.items.map(item => item.str).join(' ') + '\n';
+        }
+        return normalize(extracted);
+      }
+
+      if (name.endsWith('.docx') || type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        if (!window.mammoth) throw new Error('DOCX support is unavailable right now. Reload the page and try again.');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await window.mammoth.extractRawText({ arrayBuffer });
+        return normalize(result.value || '');
+      }
+
+      const text = await file.text();
+      return normalize(text);
+    }
+
+    async function analyzeWithAI(text, role, keywords) {
+      const response = await fetch('/api/analyze-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: text,
+          targetRole: role,
+          keywords
+        })
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || 'AI analysis request failed.');
+      }
+
+      return response.json();
+    }
+
+    resumeFile.addEventListener('change', async () => {
+      const file = resumeFile.files?.[0];
+      if (!file) return;
+      try {
+        resumeText.value = await fileToText(file);
+        renderAnalysis(analyzeResume(resumeText.value, targetRole.value, keywordInput.value));
+      } catch (error) {
+        renderAnalysis({
+          source: 'local',
+          atsScore: 0,
+          matched: [],
+          missing: [],
+          matchedPercent: 0,
+          grammarScore: 0,
+          readiness: 0,
+          grammarFlags: [error.message],
+          suggestions: ['Try a plain-text resume or paste the extracted text from the uploaded file.'],
+          summary: 'File parsing failed.'
+        });
+      }
+    });
+
+    loadSample.addEventListener('click', () => {
+      resumeText.value = sampleResume;
+      renderAnalysis(analyzeResume(sampleResume, targetRole.value, keywordInput.value));
+    });
+
+    analyzeBtn.addEventListener('click', () => {
+      const text = resumeText.value.trim();
+      if (!text) {
+        renderAnalysis({
+          atsScore: 0,
+          matched: [],
+          missing: [],
+          matchedPercent: 0,
+          grammarScore: 0,
+          readiness: 0,
+          grammarFlags: ['Please upload or paste resume text first.'],
+          suggestions: ['Paste a resume or load the sample to see instant feedback.'],
+          summary: 'No resume text loaded yet.'
+        });
+        return;
+      }
+
+      const analysis = analyzeResume(text, targetRole.value, keywordInput.value);
+      renderAnalysis(analysis);
+      analysisStatus.textContent = 'Requesting AI feedback...';
+      analyzeWithAI(text, targetRole.value, keywordInput.value)
+        .then(aiAnalysis => renderAnalysis({ ...aiAnalysis, source: 'ai' }))
+        .catch(() => {
+          analysisStatus.textContent = 'AI unavailable right now; keeping the local preview.';
+          renderAnalysis({ ...analysis, source: 'fallback' });
+        });
+    });
+
+    downloadReport.addEventListener('click', () => {
+      if (!latestReport) return;
+      const payload = {
+        generatedAt: new Date().toISOString(),
+        role: latestReport.role,
+        keywords: latestReport.keywords,
+        atsScore: latestReport.atsScore,
+        matchedKeywords: latestReport.matched,
+        missingKeywords: latestReport.missing,
+        grammarScore: latestReport.grammarScore,
+        readiness: latestReport.readiness,
+        grammarFlags: latestReport.grammarFlags,
+        suggestions: latestReport.suggestions,
+        summary: latestReport.summary
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'resume-analysis-report.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    [resumeText, targetRole, keywordInput].forEach(element => {
+      element.addEventListener('input', () => {
+        const text = resumeText.value.trim();
+        if (text) renderAnalysis(analyzeResume(text, targetRole.value, keywordInput.value));
+      });
+    });
+
+    dropzone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+    dropzone.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = event.dataTransfer.files?.[0];
+      if (!file) return;
+      try {
+        resumeText.value = await fileToText(file);
+        renderAnalysis(analyzeResume(resumeText.value, targetRole.value, keywordInput.value));
+      } catch (error) {
+        renderAnalysis({
+          atsScore: 0,
+          matched: [],
+          missing: [],
+          matchedPercent: 0,
+          grammarScore: 0,
+          readiness: 0,
+          grammarFlags: [error.message],
+          suggestions: ['Try uploading a plain-text resume or paste the extracted resume text directly.'],
+          summary: 'File parsing failed.'
+        });
+      }
+    });
+
+    renderAnalysis({
+      source: 'local',
+      atsScore: 0,
+      matched: [],
+      missing: [],
+      matchedPercent: 0,
+      grammarScore: 0,
+      readiness: 0,
+      grammarFlags: [],
+      suggestions: [],
+      summary: 'Upload a resume to begin.'
+    });
+  </script>
+</body>
+</html>
