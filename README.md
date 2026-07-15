@@ -15,3 +15,4 @@ A lightweight browser-based resume analyzer that scores ATS fit, flags missing k
 - PDF and DOCX uploads are parsed in-browser when the helper libraries load successfully.
 - You can still paste extracted text manually if a file parser is unavailable.
 - If the API key is missing, the app falls back to local heuristic analysis.
+- GitHub Actions runs `npm run validate` on pushes and pull requests.
